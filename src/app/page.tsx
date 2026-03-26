@@ -200,7 +200,7 @@ export default function Home() {
                 </span>
               </p>
               <ul className="mt-6 space-y-3 text-sm text-zinc-300">
-                <li>3 analyses per day</li>
+                <li>2 analyses per day</li>
                 <li>Score 0-100</li>
                 <li>3 improved alternatives</li>
               </ul>

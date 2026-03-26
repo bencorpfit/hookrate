@@ -16,6 +16,7 @@ export default function HookAnalyzer() {
   const [percentile, setPercentile] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [limitReached, setLimitReached] = useState(false);
 
   const analyze = async () => {
     if (!hook.trim()) return;
@@ -33,6 +34,9 @@ export default function HookAnalyzer() {
 
       if (!res.ok) {
         const data = await res.json();
+        if (data.limit) {
+          setLimitReached(true);
+        }
         throw new Error(data.error || "Something went wrong");
       }
 
@@ -105,8 +109,18 @@ export default function HookAnalyzer() {
       </div>
 
       {error && (
-        <div className="mt-4 bg-red-950/50 border border-red-800 rounded-xl p-4 text-red-400 text-sm">
-          {error}
+        <div className={`mt-4 rounded-xl p-4 text-sm ${limitReached ? "bg-zinc-900 border border-zinc-700" : "bg-red-950/50 border border-red-800 text-red-400"}`}>
+          {limitReached ? (
+            <div className="text-center">
+              <p className="text-white font-semibold text-base mb-1">Daily limit reached</p>
+              <p className="text-zinc-400 mb-3">You've used your 2 free analyses today. Come back tomorrow or upgrade.</p>
+              <a href="#pricing" className="inline-block bg-white text-black font-semibold py-2 px-6 rounded-lg hover:bg-zinc-200 transition-colors">
+                Upgrade to Pro — $9/mo
+              </a>
+            </div>
+          ) : (
+            error
+          )}
         </div>
       )}
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { checkRateLimit, incrementUsage, getIdentifier } from "@/lib/rate-limit";
 
 const anthropic = new Anthropic();
 
@@ -46,6 +48,19 @@ export async function POST(request: NextRequest) {
   try {
     const { hook, platform } = await request.json();
 
+    // Rate limit check
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const identifier = getIdentifier(request, user?.id);
+    const { allowed, remaining } = await checkRateLimit(identifier);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Daily limit reached (2/day). Upgrade to Pro for unlimited analyses.", limit: true },
+        { status: 429 }
+      );
+    }
+
     if (!hook || typeof hook !== "string" || hook.trim().length === 0) {
       return NextResponse.json(
         { error: "Hook text is required" },
@@ -86,7 +101,10 @@ export async function POST(request: NextRequest) {
       throw new Error("Invalid response format");
     }
 
-    return NextResponse.json(result);
+    // Increment usage after successful analysis
+    await incrementUsage(identifier);
+
+    return NextResponse.json({ ...result, remaining: remaining - 1 });
   } catch (err) {
     console.error("Analyze error:", err);
     return NextResponse.json(
