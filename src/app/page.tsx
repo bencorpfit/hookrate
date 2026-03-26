@@ -107,7 +107,7 @@ export default function Home() {
             Score your hooks, compare them, and track your progress — powered by AI.
           </p>
           <p className="text-sm text-zinc-500 mt-3">
-            Join 500+ creators improving their hooks daily
+            AI-powered scoring for TikTok, Instagram Reels, YouTube Shorts &amp; LinkedIn
           </p>
         </div>
 
@@ -143,34 +143,54 @@ export default function Home() {
         {activeTab === "compare" && user && <HookCompare />}
         {activeTab === "history" && user && <HookHistory />}
 
-        {/* Before/After Example */}
+        {/* Score Mockup */}
         {activeTab === "rate" && (
           <div className="mt-12 max-w-2xl w-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-2 h-2 rounded-full bg-red-400" />
-                  <span className="text-xs text-zinc-500 uppercase tracking-wider">Before</span>
-                </div>
-                <p className="text-zinc-300 text-sm mb-3">
-                  &quot;Here&apos;s what I learned building my app&quot;
-                </p>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-red-400">34</span>
-                  <span className="text-zinc-500 text-xs">/100 — Weak hook, no tension</span>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Example result</p>
+              <p className="text-zinc-300 text-sm mb-4 italic">
+                &quot;I mass-deleted 10,000 lines of code. My app got faster.&quot;
+              </p>
+              <div className="flex items-center gap-4 mb-5">
+                <div className="text-5xl font-bold text-green-400">87</div>
+                <div className="flex-1">
+                  <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-400 rounded-full" style={{ width: "87%" }} />
+                  </div>
+                  <p className="text-zinc-500 text-xs mt-1">/100 — Viral-ready</p>
                 </div>
               </div>
-              <div className="bg-zinc-900 border border-green-800/50 rounded-xl p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-2 h-2 rounded-full bg-green-400" />
-                  <span className="text-xs text-zinc-500 uppercase tracking-wider">After</span>
-                </div>
-                <p className="text-zinc-300 text-sm mb-3">
-                  &quot;I mass-deleted 10,000 lines of code. My app got faster.&quot;
-                </p>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-green-400">89</span>
-                  <span className="text-zinc-500 text-xs">/100 — Strong hook, high curiosity</span>
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                {[
+                  { label: "Curiosity", score: 92, color: "bg-green-400" },
+                  { label: "Tension", score: 85, color: "bg-green-400" },
+                  { label: "Specificity", score: 88, color: "bg-green-400" },
+                  { label: "Emotional pull", score: 74, color: "bg-yellow-400" },
+                ].map((d) => (
+                  <div key={d.label}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-zinc-400">{d.label}</span>
+                      <span className="text-zinc-300">{d.score}</span>
+                    </div>
+                    <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className={`h-full ${d.color} rounded-full`} style={{ width: `${d.score}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-zinc-800 pt-4">
+                <p className="text-zinc-500 text-xs uppercase tracking-wider mb-2">3 improved alternatives</p>
+                <div className="space-y-2">
+                  {[
+                    { score: 91, hook: "10,000 lines of code. Deleted. My app doubled in speed." },
+                    { score: 89, hook: "My app was dying. Then I deleted everything." },
+                    { score: 88, hook: "Everyone said don't touch the code. I deleted 10,000 lines." },
+                  ].map((alt, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <span className="text-green-400 text-xs font-bold shrink-0">{alt.score}</span>
+                      <span className="text-zinc-400 text-xs">{alt.hook}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -228,6 +248,30 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {/* Why HookRate */}
+        <div className="mt-20 max-w-3xl w-full">
+          <h3 className="text-2xl font-bold text-white text-center mb-10">
+            Why HookRate?
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+              <div className="text-3xl mb-3">&#9889;</div>
+              <h4 className="text-white font-semibold mb-2">Test before you film</h4>
+              <p className="text-zinc-400 text-sm">Score your hook as text in 3 seconds. No need to shoot, edit, and upload first.</p>
+            </div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+              <div className="text-3xl mb-3">&#127760;</div>
+              <h4 className="text-white font-semibold mb-2">Works everywhere</h4>
+              <p className="text-zinc-400 text-sm">Web-based. No download. Desktop, tablet, phone. Any browser.</p>
+            </div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+              <div className="text-3xl mb-3">&#128200;</div>
+              <h4 className="text-white font-semibold mb-2">4 platforms, 1 tool</h4>
+              <p className="text-zinc-400 text-sm">TikTok, Instagram Reels, YouTube Shorts, LinkedIn. All in one place.</p>
+            </div>
+          </div>
+        </div>
 
         {/* Features */}
         <div id="features" className="mt-20 max-w-4xl w-full">
@@ -346,7 +390,7 @@ export default function Home() {
             </span>
             {billingCycle === "yearly" && (
               <span className="bg-green-500/20 text-green-400 text-xs font-semibold px-2 py-0.5 rounded-full">
-                Save 20%
+                Save 34%
               </span>
             )}
           </div>
@@ -382,12 +426,13 @@ export default function Home() {
               </span>
               <h4 className="text-white font-semibold text-lg">Pro</h4>
               <p className="text-3xl font-bold text-white mt-2">
-                {billingCycle === "monthly" ? "$4.90" : "$48"}
+                {billingCycle === "monthly" ? "$4.90" : "$39"}
                 <span className="text-sm text-zinc-500 font-normal">
                   {billingCycle === "monthly" ? "/month" : "/year"}
                 </span>
               </p>
-              <ul className="mt-6 space-y-3 text-sm text-zinc-300">
+              <p className="text-emerald-400 text-xs mt-1">2x cheaper than alternatives</p>
+              <ul className="mt-5 space-y-3 text-sm text-zinc-300">
                 <li>Unlimited analyses</li>
                 <li>All platforms (TikTok, Reels, Shorts, LinkedIn)</li>
                 <li>A/B hook comparison</li>
@@ -404,6 +449,7 @@ export default function Home() {
               >
                 Start free trial
               </button>
+              <p className="text-zinc-500 text-xs text-center mt-2">Cancel anytime</p>
             </div>
           </div>
         </div>
@@ -411,6 +457,28 @@ export default function Home() {
         {/* FAQ */}
         <div className="mt-20 max-w-3xl w-full">
           <FAQ />
+        </div>
+
+        {/* Final CTA */}
+        <div className="mt-20 max-w-3xl w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center">
+          <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
+            Ready to score your first hook?
+          </h3>
+          <p className="text-zinc-400 mb-6">
+            Test your hook in 3 seconds. No signup needed.
+          </p>
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="bg-white text-black font-semibold py-3 px-8 rounded-lg hover:bg-zinc-200 transition-colors"
+          >
+            Score my hook — it&apos;s free
+          </button>
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-zinc-400 text-xs">
+            <span>AI score in 3 seconds</span>
+            <span>3 improved alternatives</span>
+            <span>No signup required</span>
+            <span>Works in any language</span>
+          </div>
         </div>
       </main>
 
