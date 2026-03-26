@@ -139,7 +139,7 @@ export default function Home() {
         </div>
 
         {/* Tab content */}
-        {activeTab === "rate" && <HookAnalyzer />}
+        {activeTab === "rate" && <HookAnalyzer isLoggedIn={!!user} onRequireAuth={() => setShowAuth(true)} />}
         {activeTab === "compare" && user && <HookCompare />}
         {activeTab === "history" && user && <HookHistory />}
 

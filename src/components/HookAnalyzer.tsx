@@ -9,7 +9,12 @@ interface HookResult {
   alternatives: { hook: string; score: number }[];
 }
 
-export default function HookAnalyzer() {
+interface HookAnalyzerProps {
+  onRequireAuth?: () => void;
+  isLoggedIn?: boolean;
+}
+
+export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzerProps) {
   const [hook, setHook] = useState("");
   const [platform, setPlatform] = useState("tiktok");
   const [result, setResult] = useState<HookResult | null>(null);
@@ -20,6 +25,10 @@ export default function HookAnalyzer() {
 
   const analyze = async () => {
     if (!hook.trim()) return;
+    if (!isLoggedIn && onRequireAuth) {
+      onRequireAuth();
+      return;
+    }
     setLoading(true);
     setError("");
     setResult(null);
@@ -115,7 +124,7 @@ export default function HookAnalyzer() {
               <p className="text-white font-semibold text-base mb-1">Daily limit reached</p>
               <p className="text-zinc-400 mb-3">You've used your 2 free analyses today. Come back tomorrow or upgrade.</p>
               <a href="#pricing" className="inline-block bg-white text-black font-semibold py-2 px-6 rounded-lg hover:bg-zinc-200 transition-colors">
-                Upgrade to Pro — $9/mo
+                Upgrade to Pro — $4.90/mo
               </a>
             </div>
           ) : (
