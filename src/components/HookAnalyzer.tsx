@@ -77,7 +77,7 @@ export default function HookAnalyzer() {
         <textarea
           value={hook}
           onChange={(e) => setHook(e.target.value)}
-          placeholder="Paste your hook here... e.g. &quot;I built an app in 14 days with zero coding experience. Here's what happened.&quot;"
+          placeholder="Paste your hook here..."
           className="w-full h-32 bg-zinc-950 border border-zinc-700 rounded-xl p-4 text-white placeholder-zinc-500 resize-none focus:outline-none focus:border-zinc-500 transition-colors"
           maxLength={500}
         />
