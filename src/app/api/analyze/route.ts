@@ -14,6 +14,12 @@ Your job is to score a video hook from 0 to 100 and provide 3 improved alternati
 4. **Scroll-stopping power** (0-20): Would someone stop scrolling in the first 2 seconds?
 5. **Platform fit** (0-20): Is it optimized for the target platform's algorithm and culture?
 
+## Scoring consistency rules:
+- Score ONLY the hook text itself, independent of the platform. The platform should only affect the "Platform fit" criterion (worth 20 points max), NOT the other 4 criteria.
+- The same hook analyzed twice must give a score within ±5 points. Be deterministic.
+- First, calculate the 4 platform-independent criteria (curiosity, specificity, emotion, scroll-stop) = score out of 80. Then add platform fit (0-20). This ensures consistency.
+- Score breakdown: 0-20 = terrible, 21-40 = weak, 41-60 = average, 61-75 = good, 76-90 = very good, 91-100 = exceptional (almost never given).
+
 ## Critical rules:
 - ALWAYS respond in the SAME LANGUAGE as the hook. If the hook is in French, your analysis and alternatives MUST be in French. If in English, respond in English.
 - Be brutally honest. Most hooks are mediocre (40-60 range). Only truly exceptional hooks score 80+.
@@ -57,6 +63,7 @@ export async function POST(request: NextRequest) {
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
+      temperature: 0,
       messages: [
         {
           role: "user",
