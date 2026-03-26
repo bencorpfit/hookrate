@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 const FREE_LIMIT = 2;
+const PRO_LIMIT = 40;
 
 // Service role client to bypass RLS
 const supabaseAdmin = createClient(
@@ -9,8 +10,10 @@ const supabaseAdmin = createClient(
 );
 
 export async function checkRateLimit(
-  identifier: string
+  identifier: string,
+  isPro: boolean = false
 ): Promise<{ allowed: boolean; remaining: number }> {
+  const limit = isPro ? PRO_LIMIT : FREE_LIMIT;
   const today = new Date().toISOString().split("T")[0];
 
   const { data } = await supabaseAdmin
@@ -22,11 +25,11 @@ export async function checkRateLimit(
 
   const currentCount = data?.count ?? 0;
 
-  if (currentCount >= FREE_LIMIT) {
+  if (currentCount >= limit) {
     return { allowed: false, remaining: 0 };
   }
 
-  return { allowed: true, remaining: FREE_LIMIT - currentCount };
+  return { allowed: true, remaining: limit - currentCount };
 }
 
 export async function incrementUsage(identifier: string): Promise<void> {
