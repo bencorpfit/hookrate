@@ -465,7 +465,7 @@ export default function Home() {
             Ready to score your first hook?
           </h3>
           <p className="text-zinc-400 mb-6">
-            Test your hook in 3 seconds. No signup needed.
+            Sign up free, score your hook in 3 seconds.
           </p>
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -476,7 +476,7 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-zinc-400 text-xs">
             <span>AI score in 3 seconds</span>
             <span>3 improved alternatives</span>
-            <span>No signup required</span>
+            <span>Free to start</span>
             <span>Works in any language</span>
           </div>
         </div>
