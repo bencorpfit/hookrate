@@ -15,20 +15,35 @@ type Tab = "rate" | "compare" | "history";
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("rate");
   const [user, setUser] = useState<User | null>(null);
+  const [isPro, setIsPro] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showWaitlist, setShowWaitlist] = useState(false);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const supabase = createClient();
 
+  // Fetch Pro status
+  const fetchProStatus = async () => {
+    try {
+      const res = await fetch("/api/subscription");
+      const data = await res.json();
+      setIsPro(data.isPro);
+    } catch {
+      setIsPro(false);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
+      if (user) fetchProStatus();
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) fetchProStatus();
+      else setIsPro(false);
     });
 
     return () => subscription.unsubscribe();
@@ -139,7 +154,7 @@ export default function Home() {
         </div>
 
         {/* Tab content */}
-        {activeTab === "rate" && <HookAnalyzer isLoggedIn={!!user} onRequireAuth={() => setShowAuth(true)} />}
+        {activeTab === "rate" && <HookAnalyzer isLoggedIn={!!user} isPro={isPro} onRequireAuth={() => setShowAuth(true)} />}
         {activeTab === "compare" && user && <HookCompare />}
         {activeTab === "history" && user && <HookHistory />}
 
@@ -444,10 +459,26 @@ export default function Home() {
                 <li>Export to CSV</li>
               </ul>
               <button
-                onClick={() => setShowWaitlist(true)}
+                onClick={async () => {
+                  if (!user) {
+                    setShowAuth(true);
+                    return;
+                  }
+                  try {
+                    const res = await fetch("/api/checkout", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ billing: billingCycle }),
+                    });
+                    const data = await res.json();
+                    if (data.url) window.location.href = data.url;
+                  } catch (err) {
+                    console.error("Checkout error:", err);
+                  }
+                }}
                 className="w-full mt-6 bg-white text-black font-semibold py-2.5 rounded-lg hover:bg-zinc-200 transition-colors"
               >
-                Start free trial
+                {isPro ? "Manage subscription" : "Upgrade to Pro"}
               </button>
               <p className="text-zinc-500 text-xs text-center mt-2">Cancel anytime</p>
             </div>

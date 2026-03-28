@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { checkRateLimit, incrementUsage, getIdentifier } from "@/lib/rate-limit";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const anthropic = new Anthropic();
 
@@ -55,11 +61,22 @@ export async function POST(request: NextRequest) {
   try {
     const { hook, platform } = await request.json();
 
-    // Rate limit check
+    // Rate limit check with Pro status
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     const identifier = getIdentifier(request, user?.id);
-    const { allowed, remaining } = await checkRateLimit(identifier);
+
+    let isPro = false;
+    if (user) {
+      const { data: sub } = await supabaseAdmin
+        .from("subscriptions")
+        .select("status")
+        .eq("user_id", user.id)
+        .single();
+      isPro = sub?.status === "active";
+    }
+
+    const { allowed, remaining } = await checkRateLimit(identifier, isPro);
 
     if (!allowed) {
       return NextResponse.json(
