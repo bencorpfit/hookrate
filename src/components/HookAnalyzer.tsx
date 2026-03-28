@@ -16,12 +16,14 @@ interface HookResult {
   subscores?: Subscores;
   analysis: string;
   alternatives: { hook: string; score: number }[];
+  remaining?: number;
 }
 
 interface HookAnalyzerProps {
   onRequireAuth?: () => void;
   isLoggedIn?: boolean;
   isPro?: boolean;
+  onUpgrade?: () => void;
 }
 
 const subscoreLabels: { key: keyof Subscores; label: string }[] = [
@@ -32,7 +34,7 @@ const subscoreLabels: { key: keyof Subscores; label: string }[] = [
   { key: "platformFit", label: "Platform Fit" },
 ];
 
-export default function HookAnalyzer({ onRequireAuth, isLoggedIn, isPro = false }: HookAnalyzerProps) {
+export default function HookAnalyzer({ onRequireAuth, isLoggedIn, isPro = false, onUpgrade }: HookAnalyzerProps) {
   const [hook, setHook] = useState("");
   const [platform, setPlatform] = useState("tiktok");
   const [result, setResult] = useState<HookResult | null>(null);
@@ -41,6 +43,8 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn, isPro = false 
   const [error, setError] = useState("");
   const [limitReached, setLimitReached] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const analyze = async (hookText?: string) => {
     const textToAnalyze = hookText || hook;
@@ -77,6 +81,9 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn, isPro = false 
       const data = await res.json();
       setResult(data);
       setHasAnalyzed(true);
+      if (typeof data.remaining === "number") {
+        setRemaining(data.remaining);
+      }
 
       addToHistory({
         hook: textToAnalyze.trim(),
@@ -109,6 +116,24 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn, isPro = false 
     if (score >= 12) return "bg-yellow-400";
     if (score >= 8) return "bg-orange-400";
     return "bg-red-400";
+  };
+
+  const copyToClipboard = async (text: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    }
   };
 
   const avgScore = getAverageScore();
@@ -151,9 +176,23 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn, isPro = false 
           </button>
         </div>
 
-        <p className="text-xs text-zinc-500 mt-2 text-right">
-          {hook.length}/500
-        </p>
+        <div className="flex items-center justify-between mt-2">
+          {!isPro && remaining !== null && remaining >= 0 && (
+            <p className="text-xs text-zinc-500">
+              {remaining > 0 ? (
+                <>{remaining} free {remaining === 1 ? "analysis" : "analyses"} left today</>
+              ) : (
+                <span className="text-orange-400">No analyses left today</span>
+              )}
+            </p>
+          )}
+          {isPro && (
+            <p className="text-xs text-emerald-500">PRO — unlimited</p>
+          )}
+          <p className="text-xs text-zinc-500 ml-auto">
+            {hook.length}/500
+          </p>
+        </div>
       </div>
 
       {/* Limit reached — smart message */}
@@ -294,7 +333,7 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn, isPro = false 
             </p>
           </div>
 
-          {/* Alternatives with Re-score button */}
+          {/* Alternatives with Copy + Re-score buttons */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
             <h3 className="text-white font-semibold mb-4">
               3 improved versions
@@ -315,13 +354,39 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn, isPro = false 
                       {alt.hook}
                     </p>
                   </div>
-                  <button
-                    onClick={() => analyze(alt.hook)}
-                    disabled={loading}
-                    className="mt-3 text-xs text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-40"
-                  >
-                    Re-score this version
-                  </button>
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={() => copyToClipboard(alt.hook, i)}
+                      className="text-xs border border-zinc-700 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-40 flex items-center gap-1.5"
+                      style={{
+                        color: copiedIndex === i ? "#4ade80" : "#71717a",
+                        borderColor: copiedIndex === i ? "#4ade80" : undefined,
+                      }}
+                    >
+                      {copiedIndex === i ? (
+                        <>
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          Copy
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => analyze(alt.hook)}
+                      disabled={loading}
+                      className="text-xs text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-40"
+                    >
+                      Re-score
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

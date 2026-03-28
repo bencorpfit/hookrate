@@ -464,6 +464,17 @@ export default function Home() {
                     setShowAuth(true);
                     return;
                   }
+                  if (isPro) {
+                    // Pro users go to Stripe Customer Portal
+                    try {
+                      const res = await fetch("/api/portal", { method: "POST" });
+                      const data = await res.json();
+                      if (data.url) window.location.href = data.url;
+                    } catch (err) {
+                      console.error("Portal error:", err);
+                    }
+                    return;
+                  }
                   try {
                     const res = await fetch("/api/checkout", {
                       method: "POST",
