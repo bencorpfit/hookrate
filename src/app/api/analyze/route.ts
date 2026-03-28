@@ -34,6 +34,13 @@ Your job is to score a video hook from 0 to 100 and provide 3 improved alternati
 ## Output format (strict JSON):
 {
   "score": <number 0-100>,
+  "subscores": {
+    "curiosity": <number 0-20>,
+    "specificity": <number 0-20>,
+    "emotion": <number 0-20>,
+    "scrollStop": <number 0-20>,
+    "platformFit": <number 0-20>
+  },
   "analysis": "<2-3 sentences explaining the score. Be specific about what works and what doesn't.>",
   "alternatives": [
     { "hook": "<improved hook 1>", "score": <number> },
@@ -42,7 +49,7 @@ Your job is to score a video hook from 0 to 100 and provide 3 improved alternati
   ]
 }
 
-Return ONLY valid JSON. No markdown, no code fences, no explanation outside the JSON.`;
+The "score" field MUST equal the sum of all 5 subscores. Return ONLY valid JSON. No markdown, no code fences, no explanation outside the JSON.`;
 
 export async function POST(request: NextRequest) {
   try {

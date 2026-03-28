@@ -1,10 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { addToHistory, getBenchmarkPercentile, getHistory } from "@/lib/storage";
+import { addToHistory, getBenchmarkPercentile, getHistory, getAverageScore } from "@/lib/storage";
+
+interface Subscores {
+  curiosity: number;
+  specificity: number;
+  emotion: number;
+  scrollStop: number;
+  platformFit: number;
+}
 
 interface HookResult {
   score: number;
+  subscores?: Subscores;
   analysis: string;
   alternatives: { hook: string; score: number }[];
 }
@@ -12,9 +21,18 @@ interface HookResult {
 interface HookAnalyzerProps {
   onRequireAuth?: () => void;
   isLoggedIn?: boolean;
+  isPro?: boolean;
 }
 
-export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzerProps) {
+const subscoreLabels: { key: keyof Subscores; label: string }[] = [
+  { key: "curiosity", label: "Curiosity Gap" },
+  { key: "specificity", label: "Specificity" },
+  { key: "emotion", label: "Emotional Tension" },
+  { key: "scrollStop", label: "Scroll-Stopping" },
+  { key: "platformFit", label: "Platform Fit" },
+];
+
+export default function HookAnalyzer({ onRequireAuth, isLoggedIn, isPro = false }: HookAnalyzerProps) {
   const [hook, setHook] = useState("");
   const [platform, setPlatform] = useState("tiktok");
   const [result, setResult] = useState<HookResult | null>(null);
@@ -22,9 +40,11 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzer
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [limitReached, setLimitReached] = useState(false);
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
 
-  const analyze = async () => {
-    if (!hook.trim()) return;
+  const analyze = async (hookText?: string) => {
+    const textToAnalyze = hookText || hook;
+    if (!textToAnalyze.trim()) return;
     if (!isLoggedIn && onRequireAuth) {
       onRequireAuth();
       return;
@@ -33,12 +53,17 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzer
     setError("");
     setResult(null);
     setPercentile(null);
+    setLimitReached(false);
+
+    if (hookText) {
+      setHook(hookText);
+    }
 
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hook: hook.trim(), platform }),
+        body: JSON.stringify({ hook: textToAnalyze.trim(), platform }),
       });
 
       if (!res.ok) {
@@ -51,17 +76,16 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzer
 
       const data = await res.json();
       setResult(data);
+      setHasAnalyzed(true);
 
-      // Save to history
       addToHistory({
-        hook: hook.trim(),
+        hook: textToAnalyze.trim(),
         platform,
         score: data.score,
         analysis: data.analysis,
         alternatives: data.alternatives,
       });
 
-      // Calculate benchmark
       const history = getHistory();
       if (history.length >= 2) {
         setPercentile(getBenchmarkPercentile(data.score));
@@ -80,8 +104,19 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzer
     return "text-red-400";
   };
 
+  const barColor = (score: number) => {
+    if (score >= 16) return "bg-green-400";
+    if (score >= 12) return "bg-yellow-400";
+    if (score >= 8) return "bg-orange-400";
+    return "bg-red-400";
+  };
+
+  const avgScore = getAverageScore();
+  const hookCount = getHistory().length;
+
   return (
     <div className="w-full max-w-2xl mx-auto">
+      {/* Input */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 md:p-8">
         <textarea
           value={hook}
@@ -104,11 +139,15 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzer
           </select>
 
           <button
-            onClick={analyze}
+            onClick={() => analyze()}
             disabled={loading || !hook.trim()}
             className="flex-1 bg-white text-black font-semibold py-2.5 px-6 rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {loading ? "Analyzing..." : "Rate my hook"}
+            {loading
+              ? "Analyzing..."
+              : hasAnalyzed && result
+                ? `Score another — beat your ${result.score}`
+                : "Rate my hook"}
           </button>
         </div>
 
@@ -117,19 +156,32 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzer
         </p>
       </div>
 
-      {error && (
-        <div className={`mt-4 rounded-xl p-4 text-sm ${limitReached ? "bg-zinc-900 border border-zinc-700" : "bg-red-950/50 border border-red-800 text-red-400"}`}>
-          {limitReached ? (
-            <div className="text-center">
-              <p className="text-white font-semibold text-base mb-1">Daily limit reached</p>
-              <p className="text-zinc-400 mb-3">You've used your 2 free analyses today. Come back tomorrow or upgrade.</p>
-              <a href="#pricing" className="inline-block bg-white text-black font-semibold py-2 px-6 rounded-lg hover:bg-zinc-200 transition-colors">
-                Upgrade to Pro — $4.90/mo
-              </a>
-            </div>
-          ) : (
-            error
-          )}
+      {/* Limit reached — smart message */}
+      {error && limitReached && (
+        <div className="mt-4 bg-zinc-900 border border-zinc-700 rounded-xl p-6 text-center">
+          <p className="text-white font-semibold text-base mb-1">Daily limit reached</p>
+          {hookCount >= 2 && avgScore > 0 ? (
+            <p className="text-zinc-400 text-sm mb-1">
+              Your average score: <span className={`font-bold ${scoreColor(avgScore)}`}>{avgScore}</span>/100
+              {avgScore < 65 && " — below the average creator (65)."}
+              {avgScore >= 65 && avgScore < 80 && " — above average, but not viral yet."}
+              {avgScore >= 80 && " — you're in the top tier."}
+            </p>
+          ) : null}
+          <p className="text-zinc-500 text-sm mb-4">
+            With Pro: unlimited analyses, detailed score breakdown, 10 AI rewrites per hook.
+          </p>
+          <a href="#pricing" className="inline-block bg-white text-black font-semibold py-2.5 px-6 rounded-lg hover:bg-zinc-200 transition-colors">
+            Unlock Pro — $4.90/mo
+          </a>
+          <p className="text-zinc-600 text-xs mt-3">or come back tomorrow for 2 free analyses</p>
+        </div>
+      )}
+
+      {/* Other errors */}
+      {error && !limitReached && (
+        <div className="mt-4 bg-red-950/50 border border-red-800 rounded-xl p-4 text-sm text-red-400">
+          {error}
         </div>
       )}
 
@@ -151,6 +203,89 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzer
             )}
           </div>
 
+          {/* Sub-scores: PRO = visible, FREE = blurred teaser */}
+          {isPro && result.subscores ? (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <h3 className="text-white font-semibold mb-4">Score breakdown</h3>
+              <div className="space-y-3">
+                {subscoreLabels.map(({ key, label }) => {
+                  const value = result.subscores![key];
+                  return (
+                    <div key={key}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-zinc-400">{label}</span>
+                        <span className={`font-semibold ${value >= 16 ? "text-green-400" : value >= 12 ? "text-yellow-400" : value >= 8 ? "text-orange-400" : "text-red-400"}`}>
+                          {value}/20
+                        </span>
+                      </div>
+                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${barColor(value)} rounded-full transition-all duration-500`}
+                          style={{ width: `${(value / 20) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Weak spot callout */}
+              {(() => {
+                const weakest = subscoreLabels.reduce((min, curr) =>
+                  result.subscores![curr.key] < result.subscores![min.key] ? curr : min
+                );
+                const weakScore = result.subscores![weakest.key];
+                if (weakScore <= 12) {
+                  return (
+                    <div className="mt-4 bg-zinc-950 border border-zinc-700 rounded-lg p-3">
+                      <p className="text-zinc-400 text-xs">
+                        <span className="text-orange-400 font-semibold">Weak spot:</span>{" "}
+                        {weakest.label} ({weakScore}/20). Focus on improving this to push your score higher.
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          ) : (
+            /* FREE user — locked sub-scores teaser */
+            <div className="bg-zinc-900 border border-dashed border-zinc-600 rounded-2xl p-6 relative overflow-hidden">
+              <div className="absolute top-3 right-3 bg-white text-black text-[10px] font-bold px-2 py-0.5 rounded-full">
+                PRO
+              </div>
+              <h3 className="text-white font-semibold mb-4">Score breakdown</h3>
+              <div className="space-y-3">
+                {subscoreLabels.map(({ label }, i) => {
+                  // Fake blurred bars to tease
+                  const fakeWidths = [75, 45, 60, 85, 55];
+                  return (
+                    <div key={label}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-zinc-500">{label}</span>
+                        <span className="text-zinc-600 font-semibold">??/20</span>
+                      </div>
+                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-zinc-600 rounded-full"
+                          style={{ width: `${fakeWidths[i]}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-zinc-500 text-xs mt-4">
+                See exactly where your hook is strong and weak. Find your blind spots.
+              </p>
+              <a
+                href="#pricing"
+                className="block mt-3 text-center bg-white text-black font-semibold py-2 rounded-lg hover:bg-zinc-200 transition-colors text-sm"
+              >
+                Unlock score breakdown — $4.90/mo
+              </a>
+            </div>
+          )}
+
           {/* Analysis */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
             <h3 className="text-white font-semibold mb-3">Analysis</h3>
@@ -159,7 +294,7 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzer
             </p>
           </div>
 
-          {/* Alternatives */}
+          {/* Alternatives with Re-score button */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
             <h3 className="text-white font-semibold mb-4">
               3 improved versions
@@ -168,20 +303,83 @@ export default function HookAnalyzer({ onRequireAuth, isLoggedIn }: HookAnalyzer
               {result.alternatives.map((alt, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-3 bg-zinc-950 rounded-xl p-4 border border-zinc-800"
+                  className="bg-zinc-950 rounded-xl p-4 border border-zinc-800"
                 >
-                  <span
-                    className={`text-2xl font-bold ${scoreColor(alt.score)} shrink-0`}
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={`text-2xl font-bold ${scoreColor(alt.score)} shrink-0`}
+                    >
+                      {alt.score}
+                    </span>
+                    <p className="text-zinc-200 text-sm leading-relaxed flex-1">
+                      {alt.hook}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => analyze(alt.hook)}
+                    disabled={loading}
+                    className="mt-3 text-xs text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-40"
                   >
-                    {alt.score}
-                  </span>
-                  <p className="text-zinc-200 text-sm leading-relaxed">
-                    {alt.hook}
-                  </p>
+                    Re-score this version
+                  </button>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* Pro upsell block — only for free users */}
+          {!isPro && (
+            <div className="bg-zinc-900 border border-dashed border-zinc-600 rounded-2xl p-6 relative overflow-hidden">
+              <div className="absolute top-3 right-3 bg-white text-black text-[10px] font-bold px-2 py-0.5 rounded-full">
+                PRO
+              </div>
+              <h3 className="text-white font-semibold mb-4">Get more from every hook</h3>
+
+              <div className="space-y-3 opacity-60">
+                <div className="flex items-center gap-3">
+                  <span className="text-zinc-400 text-sm">&#10003;</span>
+                  <div>
+                    <p className="text-zinc-300 text-sm font-medium">10 AI rewrites per hook</p>
+                    <p className="text-zinc-500 text-xs">Shock, curiosity, emotion, contrarian, question styles</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-zinc-400 text-sm">&#10003;</span>
+                  <div>
+                    <p className="text-zinc-300 text-sm font-medium">Unlimited analyses</p>
+                    <p className="text-zinc-500 text-xs">No daily limit — test as many hooks as you want</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-zinc-400 text-sm">&#10003;</span>
+                  <div>
+                    <p className="text-zinc-300 text-sm font-medium">Weak spot tracking</p>
+                    <p className="text-zinc-500 text-xs">See your patterns over weeks — not just one hook</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-zinc-400 text-sm">&#10003;</span>
+                  <div>
+                    <p className="text-zinc-300 text-sm font-medium">All platforms</p>
+                    <p className="text-zinc-500 text-xs">TikTok, Reels, Shorts, LinkedIn — optimized scoring</p>
+                  </div>
+                </div>
+              </div>
+
+              {hookCount >= 2 && avgScore > 0 && avgScore < 80 && (
+                <p className="text-zinc-400 text-xs mt-4">
+                  Your average: <span className={`font-semibold ${scoreColor(avgScore)}`}>{avgScore}</span>. Pro users improve to 74+ within 2 weeks.
+                </p>
+              )}
+
+              <a
+                href="#pricing"
+                className="block mt-4 text-center bg-white text-black font-semibold py-2.5 rounded-lg hover:bg-zinc-200 transition-colors"
+              >
+                Upgrade to Pro — $4.90/mo
+              </a>
+            </div>
+          )}
         </div>
       )}
     </div>
