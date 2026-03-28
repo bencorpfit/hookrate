@@ -1,0 +1,34 @@
+# HookRate
+
+> Score your hooks with AI. Get a score from 0 to 100 and 3 improved versions instantly.
+
+HookRate is a web-based AI tool that scores short-form video hooks (the opening line of TikTok, Instagram Reels, YouTube Shorts, and LinkedIn videos) on a scale from 0 to 100. It analyzes 5 dimensions: curiosity gap, specificity, emotional tension, scroll-stopping power, and platform fit. Each analysis also generates 3 improved alternative hooks.
+
+## Key Facts
+
+- URL: https://hookrate.io
+- Category: AI-powered content optimization tool
+- Platforms supported: TikTok, Instagram Reels, YouTube Shorts, LinkedIn
+- Pricing: Free (2 analyses/day) or Pro ($4.90/month for unlimited)
+- Built by: @bencodezero
+
+## Features
+
+- AI Hook Score (0-100) based on 5 scoring dimensions
+- 3 AI-generated improved alternatives per analysis
+- A/B hook comparison (Pro)
+- Score history and trends tracking
+- Works in any language
+
+## Scoring Dimensions
+
+1. Curiosity Gap — Does the hook create an unanswered question?
+2. Specificity — Are there concrete numbers or details?
+3. Emotional Tension — Does it trigger an emotional response?
+4. Scroll-Stopping Power — Would someone actually stop scrolling?
+5. Platform Fit — Is the hook optimized for the selected platform?
+
+## Content
+
+- Blog: https://hookrate.io/blog/best-tiktok-hooks-2026
+- Blog: https://hookrate.io/blog/hook-formulas
